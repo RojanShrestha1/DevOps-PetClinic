@@ -1,21 +1,30 @@
 services:
-  mysql:
-    image: mysql:9.6
+  mysql-db:
+    image: mysql:8.0
+    container_name: petclinic-mysql
+    restart: always  # Good practice for EC2
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=
-      - MYSQL_ALLOW_EMPTY_PASSWORD=true
-      - MYSQL_USER=petclinic
-      - MYSQL_PASSWORD=petclinic
+      - MYSQL_ROOT_PASSWORD=petclinic
       - MYSQL_DATABASE=petclinic
     volumes:
-      - "./conf.d:/etc/mysql/conf.d:ro"
-  postgres:
-    image: postgres:18.3
+      - mysql-data:/var/lib/mysql
+
+  petclinic-app:
+    build: .
+    container_name: petclinic-web
+    restart: always  # Restart app if it crashes
     ports:
-      - "5432:5432"
+      - "8080:8080"
     environment:
-      - POSTGRES_PASSWORD=petclinic
-      - POSTGRES_USER=petclinic
-      - POSTGRES_DB=petclinic
+      - SPRING_PROFILES_ACTIVE=mysql
+      # Note: 'mysql-db' matches the service name above for internal networking
+      - MYSQL_URL=jdbc:mysql://mysql-db:3306/petclinic
+      - MYSQL_USER=root
+      - MYSQL_PASS=petclinic
+    depends_on:
+      - mysql-db
+
+volumes:
+  mysql-data:
