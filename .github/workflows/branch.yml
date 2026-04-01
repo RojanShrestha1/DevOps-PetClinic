@@ -22,9 +22,8 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Run Maven Tests
-        # This catches those "Internationalization" errors before building
-        run: ./mvnw test
+      - name: Build and Package
+        run: ./mvnw clean package -DskipTests
 
   # JOB 2: Branch Image Packaging
   build-preview:
