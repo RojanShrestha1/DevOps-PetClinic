@@ -1,40 +1,35 @@
 <body>
-  <div class="py-4 mb-4 text-white rounded shadow-sm bg-primary bg-gradient px-4">
-    <h2 class="mb-1" th:text="#{findOwners}">Find Owners</h2>
-    <p class="mb-0 opacity-75">Search for system administrators and resource owners within the FinOps Guardian network.</p>
+  <div class="p-5 mb-4 bg-dark text-white rounded-3 shadow">
+    <div class="container-fluid py-2">
+      <h1 class="display-5 fw-bold">FinOps Guardian: Resource Search</h1>
+      <p class="col-md-8 fs-4 text-secondary">Identify resource owners across your cloud infrastructure.</p>
+    </div>
   </div>
 
-  <div class="card border-0 shadow-lg">
-    <div class="card-body p-5">
-      <form th:object="${owner}" th:action="@{/owners}" method="get" class="form-horizontal" id="search-owner-form">
-        
-        <div class="row mb-4 align-items-center">
-          <label class="col-sm-3 fw-bold text-secondary" th:text="#{lastName}">Last name</label>
-          <div class="col-sm-9">
-            <div class="input-group">
-              <span class="input-group-text bg-light border-end-0">
-                <i class="fa fa-search text-muted"></i>
-              </span>
-              <input class="form-control form-control-lg border-start-0 bg-light" 
-                     placeholder="Enter owner last name..."
-                     th:field="*{lastName}" size="30" maxlength="80" />
-            </div>
-            <div class="mt-2 text-danger small" th:if="${#fields.hasAnyErrors()}">
-               <p th:each="err : ${#fields.allErrors()}" th:text="${err}" class="mb-0">Error</p>
-            </div>
+  <h2 th:text="#{findOwners}" class="mb-4">Find Owners</h2>
+
+  <div class="card shadow-sm p-4 border-0 bg-light">
+    <form th:object="${owner}" th:action="@{/owners}" method="get" class="form-horizontal" id="search-owner-form">
+      <div class="form-group mb-3">
+        <div class="control-group row" id="lastNameGroup">
+          <label class="col-sm-2 control-label fw-bold" th:text="#{lastName}">Last name </label>
+          <div class="col-sm-10">
+            <input class="form-control form-control-lg border-primary" th:field="*{lastName}" size="30" maxlength="80" placeholder="Type a name to search..." />
+            <span class="help-inline text-danger">
+              <div th:if="${#fields.hasAnyErrors()}">
+                <p th:each="err : ${#fields.allErrors()}" th:text="${err}">Error</p>
+              </div>
+            </span>
           </div>
         </div>
-
-        <div class="d-flex gap-2 justify-content-end border-top pt-4">
-          <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm">
-            <i class="fa fa-filter me-2"></i> <span th:text="#{findOwner}">Find Owner</span>
-          </button>
-          <a class="btn btn-outline-success btn-lg px-4 shadow-sm" th:href="@{/owners/new}">
-            <i class="fa fa-plus me-2"></i> <span th:text="#{addOwner}">Add New Owner</span>
-          </a>
+      </div>
+      
+      <div class="form-group mt-4">
+        <div class="col-sm-offset-2 col-sm-10 d-flex gap-2">
+          <button type="submit" class="btn btn-primary btn-lg px-4" th:text="#{findOwner}">Find Owner</button>
+          <a class="btn btn-outline-dark btn-lg px-4" th:href="@{/owners/new}" th:text="#{addOwner}">Add Owner</a>
         </div>
-
-      </form>
-    </div>
+      </div>
+    </form>
   </div>
 </body>
