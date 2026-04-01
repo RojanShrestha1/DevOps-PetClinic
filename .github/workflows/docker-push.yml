@@ -26,10 +26,11 @@ jobs:
       - name: Run SonarQube Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./mvnw verify sonar:sonar \
-          -Dsonar.projectKey=PASTE_YOUR_PROJECT_KEY \
-          -Dsonar.organization=PASTE_YOUR_ORG_KEY \
-          -Dsonar.host.url=https://sonarcloud.io
+        run: |
+          ./mvnw verify sonar:sonar \
+          -Dsonar.projectKey=RojanShrestha1_DevOps-PetClinic \
+          -Dsonar.organization=rojanshrestha1 \
+          -Dsonar.host.url=https://sonarcloud.io/
 
   # JOB 2: Packaging and Shipping
   build:
@@ -63,23 +64,23 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
 
-  # JOB 3: Test Deployment (The "Manual" Pull)
-  deploy:
-    name: Deploy to EC2
-    needs: build # Only runs after the image is safe in Docker Hub
-    runs-on: ubuntu-latest
-    steps:
-      - name: Execute Remote SSH Commands
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}       # Your EC2 Public IP
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}      # Your .pem file content
-          script: |
-            # Pull the latest image
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
-            # Stop existing container if it's running
-            docker stop petclinic || true
-            docker rm petclinic || true
-            # Run the fresh version
-            docker run -d -p 80:8080 --name petclinic ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
+  # # JOB 3: Test Deployment (The "Manual" Pull)
+  # deploy:
+  #   name: Deploy to EC2
+  #   needs: build # Only runs after the image is safe in Docker Hub
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Execute Remote SSH Commands
+  #       uses: appleboy/ssh-action@v1.0.3
+  #       with:
+  #         host: ${{ secrets.EC2_HOST }}       # Your EC2 Public IP
+  #         username: ec2-user
+  #         key: ${{ secrets.EC2_SSH_KEY }}      # Your .pem file content
+  #         script: |
+  #           # Pull the latest image
+  #           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
+  #           # Stop existing container if it's running
+  #           docker stop petclinic || true
+  #           docker rm petclinic || true
+  #           # Run the fresh version
+  #           docker run -d -p 80:8080 --name petclinic ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
