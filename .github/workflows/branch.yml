@@ -47,7 +47,5 @@ jobs:
           context: .
           push: true
           tags: |
-              # Tags the image with the branch name (e.g., :ui-redesign)
               ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:${{ github.ref_name }}
-              # Also keeps a unique run-number tag for safety
               ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:preview-${{ github.run_number }}
