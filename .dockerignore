@@ -6,5 +6,3 @@ target/
 *.pem
 *.tfstate
 README.md
-src/
-pom.xml
