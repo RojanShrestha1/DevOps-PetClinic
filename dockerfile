@@ -1,23 +1,12 @@
-# STAGE 1: Build
-FROM maven:3.9-eclipse-temurin-17 AS build
-WORKDIR /build
-
-ARG CACHE_BUST=1
-
-# Copy pom and fetch dependencies (Standard DevOps caching)
-COPY pom.xml .
-RUN mvn dependency:go-offline
-
-# Copy source and build the JAR
-COPY src ./src
-RUN mvn clean package -DskipTests
-
-# STAGE 2: Run
-FROM eclipse-temurin:17-jre
+# Use a lightweight JRE for the final image
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Copy the JAR from the build stage
-COPY --from=build /build/target/*.jar app.jar
+# The JAR is built by GitHub Actions and sits in the 'target' folder
+# This COPY command grabs that fresh JAR
+COPY target/*.jar app.jar
 
 EXPOSE 8080
+
+# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
