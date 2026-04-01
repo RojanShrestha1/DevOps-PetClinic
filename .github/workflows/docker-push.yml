@@ -64,7 +64,10 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
+          tags: |
+              ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:v1.0.0
+              ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:build_v-${{ github.run_number }}
+
 
   # # JOB 3: Test Deployment (The "Manual" Pull)
   # deploy:

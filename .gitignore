@@ -44,3 +44,5 @@ secrets.txt
 *.tfstate.backup
 .terraform.lock.hcl
 *.tfvars
+
+*.bak
