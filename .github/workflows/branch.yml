@@ -25,7 +25,9 @@ jobs:
 
       # 3. Build the JAR (🔥 THIS FIXES YOUR ISSUE)
       - name: Build JAR
-        run: ./mvnw clean package -DskipTests
+        run: |
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
 
       # 4. Debug (optional but useful)
       - name: Check JAR exists
