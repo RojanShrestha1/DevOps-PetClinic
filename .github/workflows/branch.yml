@@ -2,19 +2,18 @@ name: PetClinic CI/CD Pipeline
 
 on:
   push:
-    branches-ignore: [ "main" ]
+    branches-ignore: ["main"]
 
 jobs:
-  # JOB 1: Security and Quality Analysis
-  test:
-    name: SonarQube Analysis
+  # JOB 1: Build and SonarCloud Analysis
+  sonar:
+    name: Build and SonarCloud Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-          # fetch-depth: 0 is required for Sonar to see git history here
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # needed for Sonar to see full Git history
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -23,18 +22,23 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Build and Run Sonar
+      - name: Give permissions to Gradle Wrapper
+        run: chmod +x gradlew
+
+      - name: Build and Run SonarCloud
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: ./gradlew build sonar -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+        run: |
+          ./gradlew build sonar \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.projectKey=RojanShrestha1_DevOps-PetClinic \
             -Dsonar.organization=rojanshrestha1 \
             -Dsonar.host.url=https://sonarcloud.io
 
-  # JOB 2: Packaging and Shipping
-  build:
+  # JOB 2: Docker Build and Push
+  docker:
     name: Build and Push Docker Image
-    needs: test  # This job ONLY runs if the Sonar scan passes
+    needs: sonar  # only runs if sonar job passes
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -59,7 +63,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push Image
+      - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -69,24 +73,22 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:v1.0.0
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:build_v-${{ github.run_number }}
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
-            
-  # # JOB 3: Test Deployment (The "Manual" Pull)
+
+  # JOB 3: Optional Deploy to EC2 (manual)
   # deploy:
   #   name: Deploy to EC2
-  #   needs: build # Only runs after the image is safe in Docker Hub
+  #   needs: docker
   #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/dev' # only deploy from dev branch
   #   steps:
   #     - name: Execute Remote SSH Commands
   #       uses: appleboy/ssh-action@v1.0.3
   #       with:
-  #         host: ${{ secrets.EC2_HOST }}       # Your EC2 Public IP
+  #         host: ${{ secrets.EC2_HOST }}
   #         username: ec2-user
-  #         key: ${{ secrets.EC2_SSH_KEY }}      # Your .pem file content
+  #         key: ${{ secrets.EC2_SSH_KEY }}
   #         script: |
-  #           # Pull the latest image
   #           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
-  #           # Stop existing container if it's running
   #           docker stop petclinic || true
   #           docker rm petclinic || true
-  #           # Run the fresh version
   #           docker run -d -p 80:8080 --name petclinic ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
