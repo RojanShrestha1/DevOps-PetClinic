@@ -53,3 +53,5 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:${{ github.ref_name }}
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:preview-${{ github.run_number }}
+
+# commit hash and latest
