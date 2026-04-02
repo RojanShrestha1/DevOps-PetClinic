@@ -1,11 +1,3 @@
-// Top of build.gradle
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-    }
-}
-
 
 plugins {
   id 'java'
