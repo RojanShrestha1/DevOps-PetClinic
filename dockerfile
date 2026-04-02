@@ -8,6 +8,7 @@ WORKDIR /app
 # WRONG: COPY /target/*.jar app.jar  <-- This looks in the root of the OS
 # RIGHT: COPY target/*.jar app.jar   <-- This looks in your project folder
 COPY target/*.jar app.jar
+COPY target/spring-petclinic-4.0.0-SNAPSHOT.jar app.jar
 
 # 4. The Execution
 EXPOSE 8080
