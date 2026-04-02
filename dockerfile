@@ -5,9 +5,10 @@ FROM gradle:8.5-jdk17-alpine AS build
 
 WORKDIR /app
 
+COPY  gradlew .
+COPY  gradle gradle
 
-
-COPY gradlew gradle build.gradle settings.gradle ./
+COPY build.gradle settings.gradle ./
 RUN chmod +x gradlew
 RUN ./gradlew dependencies --no-daemon
 
