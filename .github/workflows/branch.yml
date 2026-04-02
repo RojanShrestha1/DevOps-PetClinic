@@ -23,15 +23,13 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Run SonarQube Scan
+      - name: Build and Run Sonar
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ./gradlew sonarqube -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
-          -Dsonar.projectKey=RojanShrestha1_DevOps-PetClinic \
-          -Dsonar.organization=rojanshrestha1 \
-          -Dsonar.host.url=https://sonarcloud.io
+        run: ./gradlew build sonar -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.projectKey=RojanShrestha1_DevOps-PetClinic \
+            -Dsonar.organization=rojanshrestha1 \
+            -Dsonar.host.url=https://sonarcloud.io
 
   # JOB 2: Packaging and Shipping
   build:
