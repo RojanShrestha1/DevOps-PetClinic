@@ -3,6 +3,7 @@ name: PetClinic CI/CD Pipeline
 on:
   push:
     branches-ignore: ["main"] 
+
 jobs:
   # JOB 1: Build and SonarCloud Analysis
   sonar:
@@ -73,12 +74,15 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:build_v-${{ github.run_number }}
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
 
-  # JOB 3: Refresh AWS Infrastructure
+  # JOB 3: Infrastructure Update
   update-infra:
-    name: Refresh AWS Auto Scaling Group
+    name: Refresh AWS Infrastructure
     needs: docker
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -86,10 +90,23 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
+      # --- Step A: Update Infrastructure (Terraform) ---
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: ./terraform
+
+      # --- Step B: Trigger Rolling Update (Refresh ASG) ---
       - name: Refresh ASG Instances
         env:
-         ASG_NAME: ${{ secrets.ASG_NAME }} 
+          ASG_NAME: ${{ secrets.ASG_NAME }} 
         run: |
           aws autoscaling start-instance-refresh \
-          --auto-scaling-group-name "$ASG_NAME" \
-          --preferences '{"MinHealthyPercentage": 50}'
+            --auto-scaling-group-name "$ASG_NAME" \
+            --preferences '{"MinHealthyPercentage": 50}'
