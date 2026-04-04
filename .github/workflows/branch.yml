@@ -99,6 +99,12 @@ jobs:
         working-directory: ./terraform
 
       - name: Terraform Apply
+        env:
+          TF_VAR_aws_region: "${{ vars.AWS_REGION }}"
+          TF_VAR_vpc_cidr_root: "${{ vars.VPC_CIDR_ROOT }}"
+          TF_VAR_pub_sub_1a_cidr: "${{ vars.PUB_SUB_1A_CIDR }}"
+          TF_VAR_pub_sub_1b_cidr: "${{ vars.PUB_SUB_1B_CIDR }}"
+          
         run: terraform apply -auto-approve
         working-directory: ./terraform
 
