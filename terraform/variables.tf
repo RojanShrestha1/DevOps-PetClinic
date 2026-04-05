@@ -15,6 +15,7 @@ variable "pub_sub_1b_cidr" {
   type = string
 }
 
+#project Name
 variable "project_name" {
   description = "The name of our Gradle project"
   type        = string
