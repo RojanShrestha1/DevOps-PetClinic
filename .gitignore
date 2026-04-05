@@ -1,6 +1,5 @@
 HELP.md
 pom.xml.bak
-target/
 !.mvn/wrapper/maven-wrapper.jar
 .gradle
 build/
@@ -42,7 +41,8 @@ secrets.txt
 .terraform/
 *.tfstate
 *.tfstate.backup
-.terraform.lock.hcl
 *.tfvars
 
 *.bak
+
+target/

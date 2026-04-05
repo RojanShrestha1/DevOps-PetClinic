@@ -1,0 +1,54 @@
+---
+- name: Deploy Gradle App via Docker
+  hosts: localhost
+  connection: local
+  become: yes
+
+  tasks:
+    - name: 1. Update apt cache and install prerequisites
+      apt:
+        pkg:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+        state: present
+        update_cache: yes
+
+    - name: 2. Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: 3. Add Docker Repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
+        state: present
+
+    - name: 4. Install Docker CE
+      apt:
+        name: docker-ce
+        state: present
+        update_cache: yes
+
+    - name: 5. Install Docker Python SDK (Crucial for Ansible)
+      apt:
+        name: python3-docker
+        state: present
+
+    - name: 6. Ensure Docker is started and enabled
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: 7. Pull and Run Gradle Container
+      # WARNING: Replace 'your-docker-username/gradle-app:latest' with your real Hub image
+      community.docker.docker_container:
+        name: gradle-app
+        image: "rojanshr/spring-petclinic:latest"
+        state: started
+        restart_policy: always
+        published_ports:
+          - "8080:8080"

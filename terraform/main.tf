@@ -1,96 +1,36 @@
-# =====================================================
-# 1. THE BUILDING (VPC)
-# =====================================================
-resource "aws_vpc" "main" {
-  cidr_block           = "10.0.0.0/16"
-  enable_dns_hostnames = true
-  tags                 = { Name = "petclinic-vpc" }
+
+module "vpc" {
+  source = "./modules/vpc"
+
+
+  vpc_cidr              = var.vpc_cidr_root
+  public_subnet_1a_cidr = var.pub_sub_1a_cidr
+  public_subnet_1b_cidr = var.pub_sub_1b_cidr
 }
 
-# =====================================================
-# 2. BUILDING A (Availability Zone: us-east-1a)
-# =====================================================
+module "security" {
+  source = "./modules/security"
 
-# Floor 1: Public (For Load Balancer)
-resource "aws_subnet" "public_az1" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "us-east-1a"
-  map_public_ip_on_launch = true
-  tags = { Name = "Public-Subnet-AZ1-LB-1" }
-}
-
-# Floor 2: Private (For App/EC2)
-resource "aws_subnet" "private_app_az1" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.10.0/24"
-  availability_zone = "us-east-1a"
-  tags = { Name = "Private-EC2-AZ1" }
-}
-
-# Floor 3: Private (For Database/RDS)
-resource "aws_subnet" "private_db_az1" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.20.0/24"
-  availability_zone = "us-east-1a"
-  tags = { Name = "Private-DB-AZ1" }
-}
-
-# =====================================================
-# 3. BUILDING B (Availability Zone: us-east-1b)
-# =====================================================
-
-# Floor 1: Public (For Load Balancer)
-resource "aws_subnet" "public_az2" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = "us-east-1b"
-  map_public_ip_on_launch = true
-  tags = { Name = "Public-Subnet-AZ2-LB" }
-}
-
-# Floor 2: Private (For App/EC2)
-resource "aws_subnet" "private_app_az2" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.11.0/24"
-  availability_zone = "us-east-1b"
-  tags = { Name = "Private-EC2-AZ2" }
-}
-
-# Floor 3: Private (For Database/RDS)
-resource "aws_subnet" "private_db_az2" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.21.0/24"
-  availability_zone = "us-east-1b"
-  tags = { Name = "Private-DB-AZ2" }
-}
-
-# =====================================================
-# aws_internet_gateway which is attached main VPC 
-# =====================================================
-
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.main.id
-  tags   = { Name = "PetClinic-IGW" }
+  # We take the OUTPUT from the VPC module and plug it into Security
+  vpc_id       = module.vpc.vpc_id
+  project_name = var.project_name
 }
 
 
-# =====================================================
-# aws_internet_gateway which is attached main VPC 
-# =====================================================
-
-# The Static IP for the NAT
-resource "aws_eip" "nat_eip" {
-  domain = "vpc"
-  tags   = { Name = "PetClinic-NAT-EIP" }
+# 4. Compute Module (Update this to use the ALB output)
+module "compute" {
+  source            = "./modules/compute"
+  project_name      = var.project_name
+  ec2_sg_id         = module.security.ec2_sg_id
+  public_subnets    = module.vpc.public_subnet_ids
+  target_group_arns = [module.alb.tg_arn] # Now this 'alb' module exists!
 }
 
-# The NAT Gateway itself (Lives in Public AZ1)
-resource "aws_nat_gateway" "main_nat" {
-  allocation_id = aws_eip.nat_eip.id
-  subnet_id     = aws_subnet.public_az1.id 
-  tags          = { Name = "Main-NAT-Gateway" }
-
-  depends_on = [aws_internet_gateway.igw]
+# 3. ALB (The Missing Piece!)
+module "alb" {
+  source         = "./modules/alb"
+  project_name   = var.project_name
+  vpc_id         = module.vpc.vpc_id
+  alb_sg_id      = module.security.alb_sg_id
+  public_subnets = module.vpc.public_subnet_ids
 }
-

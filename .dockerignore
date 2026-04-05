@@ -1,4 +1,3 @@
-target/
 .git
 .github
 .gitignore
@@ -6,3 +5,8 @@ target/
 *.pem
 *.tfstate
 README.md
+.env
+.env.*
+secrets.txt
+.terraform/
+*.tfvars

@@ -1,21 +1,36 @@
-# STAGE 1: Build
-FROM maven:3.9-eclipse-temurin-17 AS build
-WORKDIR /build
+# ==========================================
+# STAGE 1: Build the application using Gradle
+# ==========================================
+FROM gradle:8.5-jdk17-alpine AS build
 
-# Copy pom and fetch dependencies (Standard DevOps caching)
-COPY pom.xml .
-RUN mvn dependency:go-offline
-
-# Copy source and build the JAR
-COPY src ./src
-RUN mvn clean package -DskipTests
-
-# STAGE 2: Run
-FROM eclipse-temurin:17-jre
 WORKDIR /app
 
-# Copy the JAR from the build stage
-COPY --from=build /build/target/*.jar app.jar
+COPY  gradlew .
+COPY  gradle gradle
+
+COPY build.gradle settings.gradle ./
+RUN chmod +x gradlew
+RUN ./gradlew dependencies --no-daemon
+
+COPY src ./src
+RUN ./gradlew clean bootJar -x test --no-daemon
+
+
+
+# ==========================================
+# STAGE 2: Run the application (Production)
+# ==========================================
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+# Security: create non-root user
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring:spring
+
+# Copy only the JAR from build stage
+COPY --from=build /app/build/libs/*.jar app.jar
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
