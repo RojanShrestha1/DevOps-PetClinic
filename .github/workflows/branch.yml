@@ -5,7 +5,7 @@ on:
     branches-ignore: ["main"] 
 
 jobs:
-  # JOB 1: Build and SonarCloud Analysis
+  # JOB 1: Build and SonarCloud Analysise
   sonar:
     name: Build and SonarCloud Scan
     runs-on: ubuntu-latest
