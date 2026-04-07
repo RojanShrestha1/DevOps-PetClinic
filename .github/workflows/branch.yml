@@ -108,7 +108,7 @@ jobs:
         run: terraform apply -auto-approve
         working-directory: ./terraform
 
-      # --- Step B: Trigger Rolling Update (Refresh ASG) ---
+      # --- Step B: Trigger Rolling Update (Refresh ASG) --
       - name: Refresh ASG Instances
         env:
           ASG_NAME: ${{ secrets.ASG_NAME }} 
