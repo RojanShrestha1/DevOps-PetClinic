@@ -2,16 +2,15 @@ name: PetClinic CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"] 
 
 jobs:
-  # JOB 1: Security and Quality Analysis
-  test:
-    name: SonarQube Analysis
+  # JOB 1: Build and SonarCloud Analysis
+  sonar:
+    name: Build and SonarCloud Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-          # fetch-depth: 0 is required for Sonar to see git history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -23,20 +22,23 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Run SonarQube Scan
+      - name: Give permissions to Gradle Wrapper
+        run: chmod +x gradlew
+
+      - name: Build and Run SonarCloud
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ./gradlew verify sonar:sonar \
-          -Dsonar.projectKey=RojanShrestha1_DevOps-PetClinic \
-          -Dsonar.organization=rojanshrestha1 \
-          -Dsonar.host.url=https://sonarcloud.io
+          ./gradlew build sonar \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.projectKey=RojanShrestha1_DevOps-PetClinic \
+            -Dsonar.organization=rojanshrestha1 \
+            -Dsonar.host.url=https://sonarcloud.io
 
-  # JOB 2: Packaging and Shipping
-  build:
+  # JOB 2: Docker Build and Push
+  docker:
     name: Build and Push Docker Image
-    needs: test  # This job ONLY runs if the Sonar scan passes
+    needs: sonar
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -61,7 +63,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push Image
+      - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -71,24 +73,46 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:v1.0.0
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:build_v-${{ github.run_number }}
             ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
-            
-  # # JOB 3: Test Deployment (The "Manual" Pull)
-  # deploy:
-  #   name: Deploy to EC2
-  #   needs: build # Only runs after the image is safe in Docker Hub
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Execute Remote SSH Commands
-  #       uses: appleboy/ssh-action@v1.0.3
-  #       with:
-  #         host: ${{ secrets.EC2_HOST }}       # Your EC2 Public IP
-  #         username: ec2-user
-  #         key: ${{ secrets.EC2_SSH_KEY }}      # Your .pem file content
-  #         script: |
-  #           # Pull the latest image
-  #           docker pull ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
-  #           # Stop existing container if it's running
-  #           docker stop petclinic || true
-  #           docker rm petclinic || true
-  #           # Run the fresh version
-  #           docker run -d -p 80:8080 --name petclinic ${{ secrets.DOCKERHUB_USERNAME }}/spring-petclinic:latest
+
+  # JOB 3: Infrastructure Update
+  update-infra:
+    name: Refresh AWS Infrastructure
+    needs: docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      # --- Step A: Update Infrastructure (Terraform) ---
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform
+
+      - name: Terraform Apply
+        env:
+          TF_VAR_aws_region: "${{ vars.AWS_REGION }}"
+          TF_VAR_vpc_cidr_root: "${{ vars.VPC_CIDR_ROOT }}"
+          TF_VAR_pub_sub_1a_cidr: "${{ vars.PUB_SUB_1A_CIDR }}"
+          TF_VAR_pub_sub_1b_cidr: "${{ vars.PUB_SUB_1B_CIDR }}"
+          
+        run: terraform apply -auto-approve
+        working-directory: ./terraform
+
+      # --- Step B: Trigger Rolling Update (Refresh ASG) ---
+      - name: Refresh ASG Instances
+        env:
+          ASG_NAME: ${{ secrets.ASG_NAME }} 
+        run: |
+          aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name "$ASG_NAME" \
+            --preferences '{"MinHealthyPercentage": 50}'
