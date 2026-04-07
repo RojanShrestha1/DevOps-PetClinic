@@ -7,7 +7,7 @@ on:
 jobs:
   # JOB 1: Build and SonarCloud Analysis
   sonar:
-    name: Build and SonarCloud Scan
+    name: Build and Test SonarCloud Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
