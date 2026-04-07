@@ -1,18 +1,8 @@
 
-# 1. Fetch the latest Ubuntu 24.04 AMI
-data "aws_ami" "ubuntu" {
-  most_recent = true
-  owners      = ["099720109477"] # Canonical
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
-  }
-}
 
 resource "aws_launch_template" "gradle_lt" {
   name_prefix   = "${var.project_name}-lt"
-  image_id      = data.aws_ami.ubuntu.id
+  image_id      = var.ami_id
   instance_type = "t2.micro"
   key_name      = "My_cloud"
 
@@ -49,7 +39,7 @@ resource "aws_autoscaling_group" "gradle_asg" {
   min_size            = 2
 
   # This connects your instances to the Load Balancer
-  target_group_arns   = var.target_group_arns 
+  target_group_arns = var.target_group_arns
 
   launch_template {
     id      = aws_launch_template.gradle_lt.id
@@ -74,6 +64,6 @@ resource "aws_autoscaling_policy" "cpu_scaling" {
     predefined_metric_specification {
       predefined_metric_type = "ASGAverageCPUUtilization"
     }
-    target_value = 40.0  # <--- Lower this to 20.0 or 30.0 for a faster test!
+    target_value = 40.0 # <--- Lower this to 20.0 or 30.0 for a faster test!
   }
 }

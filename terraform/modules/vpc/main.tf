@@ -1,5 +1,5 @@
 #####################################
-      #  Create the VPC #
+#  Create the VPC #
 #####################################
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
@@ -11,7 +11,7 @@ resource "aws_vpc" "main" {
 }
 
 #####################################
-    # Create the Internet Gateway #
+# Create the Internet Gateway #
 #####################################
 
 resource "aws_internet_gateway" "main_igw" {
@@ -23,14 +23,14 @@ resource "aws_internet_gateway" "main_igw" {
 }
 
 #####################################
-   # Create a Public Subnet (AZ 1a) #
- #####################################
+# Create a Public Subnet (AZ 1a) #
+#####################################
 
 resource "aws_subnet" "public_1a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.public_subnet_1a_cidr
   availability_zone       = "ap-south-1a"
-  map_public_ip_on_launch = true 
+  map_public_ip_on_launch = true
 
   tags = {
     Name = "Gradle-EC2-public-1a"
@@ -38,7 +38,7 @@ resource "aws_subnet" "public_1a" {
 }
 
 ##############################################
-   # Create a Second Public Subnet (AZ 1b) #
+# Create a Second Public Subnet (AZ 1b) #
 #############################################
 
 resource "aws_subnet" "public_1b" {
@@ -53,7 +53,7 @@ resource "aws_subnet" "public_1b" {
 }
 
 #####################################
-  #   Create a Route Table AZ-1a #
+#   Create a Route Table AZ-1a #
 #####################################
 resource "aws_route_table" "public_rt_1a" {
   vpc_id = aws_vpc.main.id
@@ -70,7 +70,7 @@ resource "aws_route_table" "public_rt_1a" {
 
 
 #####################################
-   # Create a Route Table AZ-1b #
+# Create a Route Table AZ-1b #
 #####################################
 resource "aws_route_table" "public_rt_1b" {
   vpc_id = aws_vpc.main.id

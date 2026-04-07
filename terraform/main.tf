@@ -1,3 +1,19 @@
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Official Canonical ID
+
+  filter {
+    name   = "name"
+    # This matches the standard 64-bit Ubuntu 22.04 LTS
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
 
 module "vpc" {
   source = "./modules/vpc"
@@ -22,6 +38,7 @@ module "compute" {
   source            = "./modules/compute"
   project_name      = var.project_name
   ec2_sg_id         = module.security.ec2_sg_id
+  ami_id            = data.aws_ami.ubuntu.id
   public_subnets    = module.vpc.public_subnet_ids
   target_group_arns = [module.alb.tg_arn] # Now this 'alb' module exists!
 }
@@ -33,4 +50,20 @@ module "alb" {
   vpc_id         = module.vpc.vpc_id
   alb_sg_id      = module.security.alb_sg_id
   public_subnets = module.vpc.public_subnet_ids
+}
+
+
+# 6. Monitoring (The New Addition)
+module "monitoring" {
+  source                    = "./modules/monitoring"
+  project_name              = var.project_name
+  ami_id                    = data.aws_ami.ubuntu.id
+  subnet_id                 = module.vpc.public_subnet_ids[0]
+  monitoring_sg_id          = module.security.monitoring_sg_id
+  key_name                  = "My_cloud"
+}
+
+# Also add this to your ROOT outputs.tf to see the IP in your terminal
+output "monitoring_url" {
+  value = "http://${module.monitoring.monitoring_public_ip}:3000"
 }

@@ -52,3 +52,37 @@
         restart_policy: always
         published_ports:
           - "8080:8080"
+
+    - name: 8. Download Node Exporter
+      get_url:
+        url: https://github.com/prometheus/node_exporter/releases/download/v1.8.1/node_exporter-1.8.1.linux-amd64.tar.gz
+        dest: /tmp/node_exporter.tar.gz
+
+    - name: 9. Unarchive Node Exporter
+      unarchive:
+        src: /tmp/node_exporter.tar.gz
+        dest: /opt/
+        remote_src: yes
+
+    - name: 10. Create Node Exporter Systemd Service
+      copy:
+        dest: /etc/systemd/system/node_exporter.service
+        content: |
+          [Unit]
+          Description=Node Exporter
+          After=network.target
+
+          [Service]
+          User=ubuntu
+          ExecStart=/opt/node_exporter-1.8.1.linux-amd64/node_exporter
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: 11. Start and Enable Node Exporter
+      systemd:
+        name: node_exporter
+        state: started
+        enabled: yes
+        daemon_reload: yes
+    

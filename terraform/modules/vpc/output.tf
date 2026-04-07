@@ -17,3 +17,4 @@ output "public_subnet_ids" {
   description = "List of both public subnet IDs"
   value       = [aws_subnet.public_1a.id, aws_subnet.public_1b.id]
 }
+
