@@ -1,84 +1,116 @@
-# Spring PetClinic Sample Application [![Build Status](https://github.com/spring-projects/spring-petclinic/actions/workflows/maven-build.yml/badge.svg)](https://github.com/spring-projects/spring-petclinic/actions/workflows/maven-build.yml)[![Build Status](https://github.com/spring-projects/spring-petclinic/actions/workflows/gradle-build.yml/badge.svg)](https://github.com/spring-projects/spring-petclinic/actions/workflows/gradle-build.yml)
+# 🚀 Spring PetClinic DevOps Infrastructure
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/spring-projects/spring-petclinic) [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=7517918)
+An automated, production-ready AWS ecosystem built with **Terraform**, **Ansible**, and **GitHub Actions**. This project demonstrates how to deploy a scalable Spring PetClinic application while maintaining comprehensive monitoring with **Prometheus** and **Grafana** for observability and cost optimization.
 
-## Understanding the Spring Petclinic application with a few diagrams
+---
 
-See the presentation here:  
-[Spring Petclinic Sample Application (legacy slides)](https://speakerdeck.com/michaelisvy/spring-petclinic-sample-application?slide=20)
+## 🏗️ Architecture Overview
 
-> **Note:** These slides refer to a legacy, pre–Spring Boot version of Petclinic and may not reflect the current Spring Boot–based implementation.  
-> For up-to-date information, please refer to this repository and its documentation.
+The infrastructure is designed for high availability and observability across multiple Availability Zones in the **Mumbai (ap-south-1)** region.
 
-
-## Run Petclinic locally
-
-Spring Petclinic is a [Spring Boot](https://spring.io/guides/gs/spring-boot) application built using [Maven](https://spring.io/guides/gs/maven/) or [Gradle](https://spring.io/guides/gs/gradle/).
-Java 17 or later is required for the build, and the application can run with Java 17 or newer.
-
-You first need to clone the project locally:
-
-```bash
-git clone https://github.com/spring-projects/spring-petclinic.git
-cd spring-petclinic
 ```
-If you are using Maven, you can start the application on the command-line as follows:
+┌─────────────────────────────────────────────────────────────────────┐
+│                          AWS VPC (ap-south-1)                       │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │                     Internet Gateway                          │  │
+│  └─────────────────────────┬────────────────────────────────────┘  │
+│                            │                                        │
+│  ┌────────────────────────▼─────────────────────────────────────┐  │
+│  │         Application Load Balancer (ALB - Port 80)            │  │
+│  └─────────────────────────┬─────────────────────────────────────┘  │
+│                            │                                        │
+│  ┌────────────────────────▼─────────────────────────────────────┐  │
+│  │           Auto Scaling Group (Min: 1, Max: 3)               │  │
+│  │  ┌──────────────────────────────────────────────────────┐   │  │
+│  │  │  EC2 Instance (Ubuntu + Docker)                      │   │  │
+│  │  │  • Spring PetClinic App (Port 8080)                  │   │  │
+│  │  │  • Node Exporter (Port 9100)                         │   │  │
+│  │  └──────────────────────────────────────────────────────┘   │  │
+│  │  ┌──────────────────────────────────────────────────────┐   │  │
+│  │  │  EC2 Instance (Ubuntu + Docker) - Optional Scale     │   │  │
+│  │  └──────────────────────────────────────────────────────┘   │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                     │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │        Monitoring EC2 Instance (Ubuntu)                      │  │
+│  │  • Prometheus (Port 9090) - Metrics Scraping & Storage      │  │
+│  │  • Grafana (Port 3000) - Dashboard & Visualization          │  │
+│  │  • Node Exporter (Port 9100)                                │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
 
-```bash
-./mvnw spring-boot:run
-```
-With Gradle, the command is as follows:
-
-```bash
-./gradlew bootRun
-```
-
-You can then access the Petclinic at <http://localhost:8080/>.
-
-<img width="1042" alt="petclinic-screenshot" src="https://cloud.githubusercontent.com/assets/838318/19727082/2aee6d6c-9b8e-11e6-81fe-e889a5ddfded.png">
-
-You can, of course, run Petclinic in your favorite IDE.
-See below for more details.
-
-## Building a Container
-
-There is no `Dockerfile` in this project. You can build a container image (if you have a docker daemon) using the Spring Boot build plugin:
-
-```bash
-./mvnw spring-boot:build-image
+GitHub Actions
+    ↓
+Terraform State: S3 + DynamoDB (State Locking)
 ```
 
-## In case you find a bug/suggested improvement for Spring Petclinic
+---
 
-Our issue tracker is available [here](https://github.com/spring-projects/spring-petclinic/issues).
+## 🛠️ The Tech Stack
 
-## Database configuration
+| Tool | Purpose |
+| :--- | :--- |
+| **Terraform** | Infrastructure as Code (IaC) for AWS resource provisioning. |
+| **Ansible** | Configuration Management (Docker setup, Node Exporter installation). |
+| **Docker** | Containerization of the Spring PetClinic (Java/Gradle) application. |
+| **Prometheus** | Time-series database for metrics collection and Service Discovery. |
+| **Grafana** | Visualization dashboard for real-time CPU/Memory/Network monitoring. |
+| **AWS** | Cloud provider (VPC, EC2, IAM, S3, ALB, ASG). |
 
-In its default configuration, Petclinic uses an in-memory database (H2) which
-gets populated at startup with data. The h2 console is exposed at `http://localhost:8080/h2-console`,
-and it is possible to inspect the content of the database using the `jdbc:h2:mem:<uuid>` URL. The UUID is printed at startup to the console.
+---
 
-A similar setup is provided for MySQL and PostgreSQL if a persistent database configuration is needed. Note that whenever the database type changes, the app needs to run with a different profile: `spring.profiles.active=mysql` for MySQL or `spring.profiles.active=postgres` for PostgreSQL. See the [Spring Boot documentation](https://docs.spring.io/spring-boot/how-to/properties-and-configuration.html#howto.properties-and-configuration.set-active-spring-profiles) for more detail on how to set the active profile.
+## 🚦 Features
 
-You can start MySQL or PostgreSQL locally with whatever installer works for your OS or use docker:
+### 1. Automated CI/CD Pipeline
+* **Terraform State Locking:** S3 and DynamoDB prevent concurrent infrastructure changes.
+* **GitHub Actions:** Automatic validation and planning on every push.
 
+### 2. Service Discovery & Monitoring
+* **Dynamic Instance Discovery:** Prometheus automatically discovers new EC2 instances launched by the ASG.
+* **System-Level Metrics:** Node Exporter deployed via Ansible for comprehensive monitoring.
+
+### 3. Security & Cost Management
+* **Least Privilege IAM:** Custom roles for monitoring server with read-only EC2 access.
+* **Security Groups:** Hardened firewalls (ALB: 80, Prometheus: 9090, Grafana: 3000).
+* **Cost Control:** ASG limits and AWS Budgets integration.
+
+---
+
+## 🚀 Deployment Guide
+
+### Prerequisites
+* AWS CLI configured with a profile (e.g., `Techaxis`).
+* Terraform installed on your local machine.
+* SSH Key named `My_cloud` in your AWS region.
+
+### Steps
+1.  **Initialize the Backend:**
+    ```bash
+    terraform init
+    ```
+2.  **Verify the Plan:**
+    ```bash
+    terraform plan
+    ```
+3.  **Apply the Infrastructure:**
+    ```bash
+    terraform apply --auto-approve
+    ```
+
+---
+
+## 📊 Visualizing Results
+
+Once deployed, access your infrastructure:
+
+* **Application:** `http://<ALB_DNS_NAME>`
+* **Prometheus Target Discovery:** `http://<MONITORING_IP>:9090/targets`
+* **Grafana Dashboard:** `http://<MONITORING_IP>:3000` (admin/admin)
+
+### Verify Monitoring:
 ```bash
-docker run -e MYSQL_USER=petclinic -e MYSQL_PASSWORD=petclinic -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=petclinic -p 3306:3306 mysql:9.6
-```
-
-or
-
-```bash
-docker run -e POSTGRES_USER=petclinic -e POSTGRES_PASSWORD=petclinic -e POSTGRES_DB=petclinic -p 5432:5432 postgres:18.3
-```
-
-Further documentation is provided for [MySQL](https://github.com/spring-projects/spring-petclinic/blob/main/src/main/resources/db/mysql/petclinic_db_setup_mysql.txt)
-and [PostgreSQL](https://github.com/spring-projects/spring-petclinic/blob/main/src/main/resources/db/postgres/petclinic_db_setup_postgres.txt).
-
-Instead of vanilla `docker` you can also use the provided `docker-compose.yml` file to start the database containers. Each one has a service named after the Spring profile:
-
-```bash
-docker compose up mysql
+sudo apt install stress -y
+stress --cpu 4 --timeout 60s
 ```
 
 or
