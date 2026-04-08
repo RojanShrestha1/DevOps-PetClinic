@@ -52,6 +52,9 @@
         restart_policy: always
         published_ports:
           - "8080:8080"
+        env:
+          MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "prometheus,health,metrics"  
+          
 
     - name: 8. Download Node Exporter
       get_url:

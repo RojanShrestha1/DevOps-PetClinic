@@ -26,15 +26,6 @@ resource "aws_security_group" "ec2_sg" {
   description = "Allow traffic ONLY from the ALB"
   vpc_id      = var.vpc_id
 
-  ingress {
-    description = "Only allow traffic from the ALB"
-    from_port   = 8080 # Your App Port
-    to_port     = 8080
-    protocol    = "tcp"
-    # SECURITY WIN: No CIDR blocks here! 
-    # Only the ALB's ID is allowed.
-    security_groups = [aws_security_group.alb_sg.id]
-  }
 
   ingress {
     description = "Allow SSH from anywhere"
@@ -52,6 +43,26 @@ resource "aws_security_group" "ec2_sg" {
   }
 }
 
+# Rule A: Let the ALB talk to the App (For Users)
+resource "aws_security_group_rule" "allow_alb_to_app" {
+  type                     = "ingress"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ec2_sg.id
+  source_security_group_id = aws_security_group.alb_sg.id
+}
+
+# Rule B: Let Prometheus talk to the App (For Metrics)
+# (You already have this one, just keep it!)
+resource "aws_security_group_rule" "allow_prometheus_to_app" {
+  type                     = "ingress"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ec2_sg.id
+  source_security_group_id = aws_security_group.monitoring_sg.id
+}
 
 
 
@@ -106,12 +117,4 @@ resource "aws_security_group_rule" "allow_monitoring_scrape" {
   source_security_group_id = aws_security_group.monitoring_sg.id # The Monitoring SG
 }
 
-
-resource "aws_security_group_rule" "allow_prometheus_to_app" {
-  type                     = "ingress"
-  from_port               = 8080
-  to_port                 = 8080
-  protocol                = "tcp"
-  security_group_id       = aws_security_group.ec2_sg.id # Your App SG
-  source_security_group_id = aws_security_group.monitoring_sg.id # Your Monitoring SG
-}
+ 
