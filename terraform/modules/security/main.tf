@@ -105,3 +105,13 @@ resource "aws_security_group_rule" "allow_monitoring_scrape" {
   security_group_id        = aws_security_group.ec2_sg.id        # Your App Server SG
   source_security_group_id = aws_security_group.monitoring_sg.id # The Monitoring SG
 }
+
+
+resource "aws_security_group_rule" "allow_prometheus_to_app" {
+  type                     = "ingress"
+  from_port               = 8080
+  to_port                 = 8080
+  protocol                = "tcp"
+  security_group_id       = aws_security_group.ec2_sg.id # Your App SG
+  source_security_group_id = aws_security_group.monitoring_sg.id # Your Monitoring SG
+}
