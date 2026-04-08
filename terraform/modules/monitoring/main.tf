@@ -1,58 +1,57 @@
-# 1. The Monitoring EC2 Instance
+# 1. The Bucket (Service-Dependent)
+resource "aws_s3_bucket" "ansible_config_bucket" {
+  bucket = "${var.project_name}-monitoring-configs-2026" # Unique name
+}
+
+# 2. Privacy Settings
+resource "aws_s3_bucket_public_access_block" "ansible_config_privacy" {
+  bucket = aws_s3_bucket.ansible_config_bucket.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# 3. The Zip Upload
+resource "aws_s3_object" "ansible_zip" {
+  bucket = aws_s3_bucket.ansible_config_bucket.id
+  key    = "monitoring-setup.zip"
+  # Since this is INSIDE the module folder, we point to the local file there
+  source = "${path.module}/monitoring-setup.zip" 
+  etag   = filemd5("${path.module}/monitoring-setup.zip")
+}
+
+# 4. The EC2 Instance
 resource "aws_instance" "monitoring_server" {
   ami                    = var.ami_id
   instance_type          = "t3.micro"
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [var.monitoring_sg_id]
   key_name               = var.key_name
-
-  # IAM Instance Profile is CRITICAL so Prometheus can "see" your other EC2s
-  iam_instance_profile = aws_iam_instance_profile.monitoring_profile.name
+  iam_instance_profile   = aws_iam_instance_profile.monitoring_profile.name
 
   user_data = <<-EOF
               #!/bin/bash
-              # Update and install Docker
               apt-get update -y
-              apt-get install -y docker.io
+              apt-get install -y docker.io ansible unzip awscli
               systemctl start docker
-              systemctl enable docker
-
-              # Create a directory for Prometheus configuration
-              mkdir -p /etc/prometheus
-
-              # Create the prometheus.yml file
-              # This tells Prometheus to find any EC2 with the 'App' tag
-              cat << 'PCONFIG' > /etc/prometheus/prometheus.yml
-              global:
-                scrape_interval: 15s
-
-              scrape_configs:
-                - job_name: 'ec2-nodes'
-                  ec2_sd_configs:
-                    - region: 'ap-south-1' 
-                      port: 9100
-                  relabel_configs:
-                    - source_labels: [__meta_ec2_tag_Name]
-                      regex: '.*-asg-instance'
-                      action: keep
-              PCONFIG
-
-              # Start Prometheus (The Database)
-              docker run -d \
-                --name prometheus \
-                -p 9090:9090 \
-                -v /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
-                prom/prometheus --config.file=/etc/prometheus/prometheus.yml
-
-              # Start Grafana (The UI)
-              # Default login: admin / admin
-              docker run -d \
-                --name grafana \
-                -p 3000:3000 \
-                grafana/grafana
+              
+              mkdir -p /opt/monitoring
+              cd /opt/monitoring
+              
+              # Reference the bucket directly since it's in the same module
+              aws s3 cp s3://${aws_s3_bucket.ansible_config_bucket.id}/monitoring-setup.zip .
+              
+              unzip monitoring-setup.zip
+              cd ansible
+              ansible-playbook deploy_monitoring.yml
               EOF
 
-  tags = {
-    Name = "${var.project_name}-monitoring-server"
-  }
+  # Ensure the zip is in S3 before the server starts
+  depends_on = [aws_s3_object.ansible_zip]
+
+    tags = {
+        Name = "${var.project_name}-monitoring-server"
+    }
 }
+

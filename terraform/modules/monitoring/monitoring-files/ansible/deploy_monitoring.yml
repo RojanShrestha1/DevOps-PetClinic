@@ -1,0 +1,50 @@
+---
+- name: Deploy Monitoring Stack
+  hosts: localhost
+  connection: local
+  become: yes
+
+  tasks:
+    - name: Ensure Prometheus config directory exists
+      file:
+        path: /etc/prometheus
+        state: directory
+        mode: '0755'
+
+    - name: Copy Prometheus configuration
+      copy:
+        # We use ../ because prometheus.yml is in the parent folder of 'ansible'
+        src: "../prometheus.yml"
+        dest: /etc/prometheus/prometheus.yml
+        mode: '0644'
+
+    - name: Install Python Docker module
+      apt:
+        name: python3-docker
+        state: present
+
+    - name: Deploy Prometheus Container
+      community.docker.docker_container:
+        name: prometheus
+        image: prom/prometheus:latest
+        state: started
+        restart_policy: always
+        published_ports:
+          - "9090:9090"
+        volumes:
+          - /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+        # Important for Service Discovery: tells Prometheus where the config is
+        command:
+          - "--config.file=/etc/prometheus/prometheus.yml"
+          - "--storage.tsdb.path=/prometheus"
+
+    - name: Deploy Grafana Container
+      community.docker.docker_container:
+        name: grafana
+        image: grafana/grafana:latest
+        state: started
+        restart_policy: always
+        published_ports:
+          - "3000:3000"
+        env:
+          GF_SECURITY_ADMIN_PASSWORD: "admin" # Change this for production!

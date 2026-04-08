@@ -67,3 +67,17 @@ module "monitoring" {
 output "monitoring_url" {
   value = "http://${module.monitoring.monitoring_public_ip}:3000"
 }
+
+
+# Create the Private S3 Bucket for your Ansible automation
+resource "aws_s3_bucket" "ansible_config_bucket" {
+  bucket = "${var.project_name}-ansible-deployments-2026" 
+}
+
+# Upload your Ansible zip from your laptop to S3
+resource "aws_s3_object" "ansible_zip" {
+  bucket = aws_s3_bucket.ansible_config_bucket.id
+  key    = "monitoring-setup.zip"
+  source = "./monitoring-setup.zip" # The file on your laptop
+  etag   = filemd5("./modules/monitoring/monitoring-setup.zip")
+}

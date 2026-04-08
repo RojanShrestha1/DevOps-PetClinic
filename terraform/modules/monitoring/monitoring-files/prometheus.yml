@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s # How often to poll for metrics
+  evaluation_interval: 15s
+
+scrape_configs:
+  # 1. Monitor Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # 2. Dynamic Discovery for your App Servers
+  - job_name: 'petclinic-app'
+    ec2_sd_configs:
+      - region: 'ap-south-1' # <-- CRITICAL: Change this to your actual AWS region (e.g., ap-south-1)
+        port: 8080          # The port where your Spring Boot/Gradle app runs
+    
+    relabel_configs:
+      # Filter: Only keep instances that have the Name tag from your ASG
+      - source_labels: [__meta_ec2_tag_Name]
+        regex: 'gradle-project-asg-instance'
+        action: keep
+
+      # Cleanup: Replace the "instance" label with the Private IP for better readability
+      - source_labels: [__meta_ec2_availability_zone, __meta_ec2_private_ipd]
+        target_label: instance
