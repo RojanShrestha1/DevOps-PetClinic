@@ -16,9 +16,9 @@ resource "aws_s3_bucket_public_access_block" "ansible_config_privacy" {
 resource "aws_s3_object" "ansible_zip" {
   bucket = aws_s3_bucket.ansible_config_bucket.id
   key    = "monitoring-setup.zip"
-  # Since this is INSIDE the module folder, we point to the local file there
-  source = "${path.module}/monitoring-setup.zip" 
-  etag   = filemd5("${path.module}/monitoring-setup.zip")
+  # Use path.module to tell Terraform to look inside the monitoring module folder
+  source = "${path.module}/modules/monitoring/monitoring-setup.zip" 
+  etag   = filemd5("${path.module}/modules/monitoring/monitoring-setup.zip")
 }
 
 # 4. The EC2 Instance
