@@ -15,12 +15,17 @@ scrape_configs:
       - region: 'ap-south-1' # <-- CRITICAL: Change this to your actual AWS region (e.g., ap-south-1)
         port: 8080          # The port where your Spring Boot/Gradle app runs
     
-    relabel_configs:
-      # Filter: Only keep instances that have the Name tag from your ASG
+relabel_configs:
+      # Filter: Only keep instances with your specific ASG tag
       - source_labels: [__meta_ec2_tag_Name]
         regex: 'gradle-project-asg-instance'
         action: keep
 
-      # Cleanup: Replace the "instance" label with the Private IP for better readability
-      - source_labels: [__meta_ec2_availability_zone, __meta_ec2_private_ip]
+      # MANDATORY: This tells Prometheus to use the Private IP:Port for scraping
+      - source_labels: [__meta_ec2_private_ip]
+        replacement: '${1}:8080'
+        target_label: __address__
+
+      # OPTIONAL: This makes your dashboard look pretty by showing the IP as the instance name
+      - source_labels: [__meta_ec2_private_ip, __meta_ec2_availability_zone]
         target_label: instance
