@@ -15,7 +15,7 @@ scrape_configs:
       - region: 'ap-south-1' # <-- CRITICAL: Change this to your actual AWS region (e.g., ap-south-1)
         port: 8080          # The port where your Spring Boot/Gradle app runs
     
-relabel_configs:
+    relabel_configs:
       # Filter: Only keep instances with your specific ASG tag
       - source_labels: [__meta_ec2_tag_Name]
         regex: 'gradle-project-asg-instance'

@@ -35,14 +35,25 @@ resource "aws_instance" "monitoring_server" {
               apt-get update -y
               apt-get install -y docker.io ansible unzip awscli
               systemctl start docker
-              
+
+              # 1. Install the collection AND the python library (The fix for your fatal error)
+              ansible-galaxy collection install community.docker
+              apt-get install -y python3-docker
+
               mkdir -p /opt/monitoring
+              mkdir -p /etc/prometheus # Ensure this exists for the mount
               cd /opt/monitoring
-              
-              # Reference the bucket directly since it's in the same module
+
+              # Fetch the setup
               aws s3 cp s3://${aws_s3_bucket.ansible_config_bucket.id}/monitoring-setup.zip .
-              
-              unzip monitoring-setup.zip
+              unzip -o monitoring-setup.zip # -o to overwrite if re-running
+
+              # 2. Manual step: Copy prometheus.yml to /etc (The fix for the volume mount)
+              # This ensures the file is exactly where the Docker command expects it
+              cp /opt/monitoring/prometheus.yml /etc/prometheus/prometheus.yml
+              chmod 644 /etc/prometheus/prometheus.yml
+
+              # 3. Run the playbook
               cd ansible
               ansible-playbook deploy_monitoring.yml
               EOF

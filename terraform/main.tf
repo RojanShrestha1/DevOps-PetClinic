@@ -3,7 +3,7 @@ data "aws_ami" "ubuntu" {
   owners      = ["099720109477"] # Official Canonical ID
 
   filter {
-    name   = "name"
+    name = "name"
     # This matches the standard 64-bit Ubuntu 22.04 LTS
     values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
   }
@@ -55,12 +55,12 @@ module "alb" {
 
 # 6. Monitoring (The New Addition)
 module "monitoring" {
-  source                    = "./modules/monitoring"
-  project_name              = var.project_name
-  ami_id                    = data.aws_ami.ubuntu.id
-  subnet_id                 = module.vpc.public_subnet_ids[0]
-  monitoring_sg_id          = module.security.monitoring_sg_id
-  key_name                  = "My_cloud"
+  source           = "./modules/monitoring"
+  project_name     = var.project_name
+  ami_id           = data.aws_ami.ubuntu.id
+  subnet_id        = module.vpc.public_subnet_ids[0]
+  monitoring_sg_id = module.security.monitoring_sg_id
+  key_name         = "My_cloud"
 }
 
 # Also add this to your ROOT outputs.tf to see the IP in your terminal
@@ -71,6 +71,6 @@ output "monitoring_url" {
 
 # Create the Private S3 Bucket for your Ansible automations
 resource "aws_s3_bucket" "ansible_config_bucket" {
-  bucket = "${var.project_name}-ansible-deployments-2026" 
+  bucket = "${var.project_name}-ansible-deployments-2026"
 }
 
