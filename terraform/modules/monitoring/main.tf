@@ -65,4 +65,3 @@ resource "aws_instance" "monitoring_server" {
         Name = "${var.project_name}-monitoring-server"
     }
 }
-

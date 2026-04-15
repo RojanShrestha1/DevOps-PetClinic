@@ -13,16 +13,20 @@
 
     - name: Copy Prometheus configuration
       copy:
-        # Looking for prometheus.yml in the parent directory of this playbook
         src: "../prometheus.yml"
         dest: /etc/prometheus/prometheus.yml
         mode: '0644'
+
+    # --- NEW TASK: Create a bridge network ---
+    - name: Create Monitoring Network
+      shell: docker network create monitoring-network || true
 
     - name: Deploy Prometheus Container
       shell: |
         docker rm -f prometheus || true
         docker run -d \
           --name prometheus \
+          --network monitoring-network \
           --restart always \
           -p 9090:9090 \
           -v /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml \
@@ -35,6 +39,7 @@
         docker rm -f grafana || true
         docker run -d \
           --name grafana \
+          --network monitoring-network \
           --restart always \
           -p 3000:3000 \
           -e "GF_SECURITY_ADMIN_PASSWORD=admin" \
